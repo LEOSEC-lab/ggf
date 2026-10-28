@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>BELL PLAY MUSIC</title>
+  <meta name="theme-color" content="#0d0f17">
+  <meta name="description" content="BELL PLAY MUSIC: player de áudio local com biblioteca, controles de reprodução e equalizador.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Font Google: Plus Jakarta Sans -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f3ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              accent: '#22d3ee',
+              dark: '#0a0c14',
+              card: '#121624'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="antialiased min-h-screen text-slate-100 flex flex-col justify-between">
+
+  <!-- MODAL DE PERMISSÕES AO ENTRAR (ESTILO APK NATIVO) -->
+  <div id="permissions-modal" class="fixed inset-0 z-50 glass-modal flex flex-col justify-center items-center p-6 transition-all duration-300">
+    <div class="glass p-7 rounded-3xl max-w-sm w-full space-y-6 text-center border border-brand-accent/30 shadow-2xl">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-600 to-brand-accent p-0.5 mx-auto shadow-xl shadow-brand-500/30">
+        <div class="w-full h-full bg-brand-dark rounded-[14px] flex items-center justify-center">
+          <i class="fa-solid fa-shield-halved text-brand-accent text-2xl"></i>
+        </div>
+      </div>
+      
+      <div class="space-y-2">
+        <h2 class="text-lg font-black text-white tracking-wide">BELL PLAY MUSIC</h2>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Para garantir o funcionamento perfeito do player, equalizador profissional e cache offline em seu APK, precisamos de algumas permissões de sistema:
+        </p>
+      </div>
+
+      <div class="space-y-2.5 text-left text-xs bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800">
+        <div class="flex items-center gap-3 text-slate-200">
+          <i class="fa-solid fa-microphone text-brand-accent w-4 text-center"></i>
+          <span>Acesso de Áudio / Microfone</span>
+        </div>
+        <div class="flex items-center gap-3 text-slate-200">
+          <i class="fa-solid fa-bell text-brand-accent w-4 text-center"></i>
+          <span>Notificações de Reprodução</span>
+        </div>
+        <div class="flex items-center gap-3 text-slate-200">
+          <i class="fa-solid fa-hard-drive text-brand-accent w-4 text-center"></i>
+          <span>Armazenamento de Músicas Locais</span>
+        </div>
+      </div>
+
+      <button type="button" onclick="grantPermissionsAndStart()" class="w-full py-3.5 bg-gradient-to-r from-brand-accent to-brand-500 text-slate-950 font-black text-xs rounded-2xl shadow-lg shadow-brand-accent/30 active:scale-95 transition flex items-center justify-center gap-2">
+        <i class="fa-solid fa-circle-check text-sm"></i> Permitir e Entrar no App
+      </button>
+    </div>
+  </div>
+
+  <!-- Top Header Bar -->
+  <header class="sticky top-0 z-40 glass px-5 py-3.5 flex items-center justify-between border-b border-slate-800/80">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-accent p-0.5 shadow-lg shadow-brand-500/20">
+        <div class="w-full h-full bg-brand-dark rounded-[10px] flex items-center justify-center">
+          <i class="fa-solid fa-compact-disc text-brand-accent animate-spin text-lg" style="animation-duration: 8s;"></i>
+        </div>
+      </div>
+      <div>
+        <h1 class="font-black text-sm tracking-wider text-white flex items-center gap-1.5">
+          BELL PLAY <span class="text-brand-accent text-xs px-1.5 py-0.5 rounded bg-brand-accent/10 border border-brand-accent/20">MUSIC</span>
+        </h1>
+        <p class="text-[10px] text-slate-400 font-semibold tracking-tight">PLAYER RAIZ PWA</p>
+      </div>
+    </div>
+
+    <!-- Quick Profile Trigger -->
+    <button onclick="switchTab('profile')" class="relative group focus:outline-none">
+      <img id="header-avatar" src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=300&q=80" class="w-9 h-9 rounded-full object-cover ring-2 ring-brand-accent/50 group-hover:scale-105 transition shadow-md">
+      <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-brand-dark rounded-full"></span>
+    </button>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="flex-1 px-4 py-5 max-w-2xl mx-auto w-full space-y-6">
+
+    <!-- TAB 1: INÍCIO (INÍCIO / BIBLIOTECA) -->
+    <section id="tab-home" class="tab-content space-y-6">
+      
+      <!-- Banner de Boas-Vindas & Adicionar Músicas -->
+      <div class="glass p-5 rounded-3xl relative overflow-hidden bg-gradient-to-br from-brand-600/20 via-brand-dark to-brand-dark border border-brand-500/20 shadow-xl">
+        <div class="relative z-10 space-y-3">
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-500/20 text-brand-accent border border-brand-accent/30">
+            Sua Biblioteca de Áudio Raiz
+          </span>
+          <h2 class="text-xl font-extrabold text-white leading-snug">
+            Toque Suas Músicas com Qualidade Máxima Studio
+          </h2>
+          <p class="text-xs text-slate-300 leading-relaxed max-w-sm">
+            Importe faixas individuais ou pastas inteiras do seu dispositivo em MP3, WAV, M4A ou OGG!
+          </p>
+
+          <div class="flex flex-wrap gap-2.5 pt-2">
+            <label class="cursor-pointer inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-lg shadow-brand-500/30 active:scale-95 transition">
+              <i class="fa-solid fa-file-audio text-sm"></i> + Adicionar Arquivos
+              <input type="file" id="local-file-input" multiple accept="audio/*" class="hidden" onchange="handleFileUpload(event)">
+            </label>
+            <label class="cursor-pointer inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-4 py-2.5 rounded-2xl border border-slate-700 active:scale-95 transition">
+              <i class="fa-solid fa-folder-open text-brand-accent"></i> + Pasta Completa
+              <input type="file" id="local-folder-input" webkitdirectory directory multiple class="hidden" onchange="handleFileUpload(event)">
+            </label>
+          </div>
+        </div>
+        <i class="fa-solid fa-music absolute -right-4 -bottom-4 text-8xl text-brand-500/10 pointer-events-none"></i>
+      </div>
+
+      <!-- Lista de Músicas Adicionadas -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+            <i class="fa-solid fa-list-ul text-brand-accent"></i> Suas Faixas (<span id="track-count">0</span>)
+          </h3>
+          <button onclick="clearPlaylist()" class="text-[11px] text-red-400 hover:text-red-300 font-bold flex items-center gap-1 bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20 transition">
+            <i class="fa-solid fa-trash-can"></i> Limpar
+          </button>
+        </div>
+
+        <div id="playlist-container" class="space-y-2">
+          <!-- Item Renderizado por JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: BAIXAR MUSICA MP3 VIA LINK -->
+    <section id="tab-download" class="tab-content hidden space-y-6">
+      <div class="glass p-6 rounded-3xl space-y-4 border border-slate-800 shadow-xl">
+        <div class="space-y-1">
+          <span class="text-[10px] font-black uppercase text-brand-accent tracking-widest bg-brand-accent/10 px-2.5 py-0.5 rounded-full">
+            Downloader / Stream
+          </span>
+          <h2 class="text-lg font-extrabold text-white">Baixar por Link (YouTube / MP3)</h2>
+          <p class="text-xs text-slate-400">Cole a URL de um áudio, vídeo do YouTube ou link MP3 para importar para sua biblioteca do BELL PLAY.</p>
+        </div>
+
+        <form onsubmit="handleURLDownload(event)" class="space-y-3">
+          <div class="relative">
+            <input type="url" id="yt-link-input" placeholder="Cole o link aqui (Ex: https://youtube.com/watch?v=... ou .mp3)" class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl py-3 px-4 pl-10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-accent transition">
+            <i class="fa-solid fa-link absolute left-3.5 top-3.5 text-slate-500 text-xs"></i>
+          </div>
+
+          <button type="submit" class="w-full bg-gradient-to-r from-brand-accent to-brand-500 text-slate-950 font-black text-xs py-3 rounded-2xl shadow-lg shadow-brand-accent/20 active:scale-95 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-cloud-arrow-down text-sm"></i> Extrair Áudio HD
+          </button>
+        </form>
+
+        <div id="download-progress" class="hidden glass p-4 rounded-2xl space-y-2 border border-brand-500/30">
+          <div class="flex justify-between items-center text-xs">
+            <span id="download-status-text" class="font-bold text-slate-300 flex items-center gap-2">
+              <i class="fa-solid fa-spinner animate-spin text-brand-accent"></i> Processando Link...
+            </span>
+            <span id="download-percent" class="font-black text-brand-accent">0%</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div id="download-progress-bar" class="bg-gradient-to-r from-brand-accent to-brand-500 h-2 w-0 transition-all duration-300"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: EQUALIZADOR PROFISSIONAL 10 BANDAS -->
+    <section id="tab-eq" class="tab-content hidden space-y-6">
+      <div class="glass p-6 rounded-3xl space-y-6 border border-slate-800 shadow-xl">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-extrabold text-white flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-brand-accent"></i> Equalizador Studio Pro (10 Bandas)
+            </h2>
+            <p class="text-xs text-slate-400">Ajuste de áudio de alta precisão Hi-Fi em tempo real</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="eq-toggle" class="sr-only peer" checked onchange="toggleEQ(this.checked)">
+            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-accent"></div>
+          </label>
+        </div>
+
+        <!-- Presets Profissionais -->
+        <div class="space-y-2">
+          <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Presets de Estúdio</span>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="setEQPreset('flat')" class="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-[11px] font-bold text-slate-300 border border-slate-700/50 transition">Flat</button>
+            <button onclick="setEQPreset('bass')" class="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-[11px] font-bold text-brand-accent border border-brand-accent/30 transition">Bass Boost 🔊</button>
+            <button onclick="setEQPreset('rock')" class="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-[11px] font-bold text-slate-300 border border-slate-700/50 transition">Rock 🎸</button>
+            <button onclick="setEQPreset('pop')" class="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-[11px] font-bold text-slate-300 border border-slate-700/50 transition">Pop 🎤</button>
+            <button onclick="setEQPreset('dance')" class="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-[11px] font-bold text-slate-300 border border-slate-700/50 transition">Dance 🎧</button>
+            <button onclick="setEQPreset('vocal')" class="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 rounded-xl text-[11px] font-bold text-slate-300 border border-slate-700/50 transition">Vocal 🎙️</button>
+          </div>
+        </div>
+
+        <!-- Efeitos Especiais de Som -->
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <div class="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-200">Grave 3D (Bass Extra)</span>
+              <span id="bass-boost-val" class="text-[10px] font-mono text-brand-accent font-bold">0 dB</span>
+            </div>
+            <input type="range" min="0" max="15" value="0" step="0.5" class="w-full cursor-pointer" oninput="updateBassBoost(this.value)">
+          </div>
+
+          <div class="bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-200">Volume Pre-Amp</span>
+              <span id="preamp-val" class="text-[10px] font-mono text-brand-accent font-bold">100%</span>
+            </div>
+            <input type="range" min="0.5" max="2.0" value="1.0" step="0.1" class="w-full cursor-pointer" oninput="updateGain(this.value)">
+          </div>
+        </div>
+
+        <!-- Sliders Frequências 10 Bandas -->
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Frequências (dB)</span>
+            <button onclick="resetEQ()" class="text-[10px] text-brand-accent font-bold hover:underline"><i class="fa-solid fa-rotate-left"></i> Resetar</button>
+          </div>
+          
+          <div class="grid grid-cols-10 gap-1.5 pt-4 pb-3 text-center bg-slate-900/90 p-3 rounded-2xl border border-slate-800 overflow-x-auto">
+            <div class="space-y-2 min-w-[32px]">
+              <span class="text-[9px] font-bold text-slate-400 block">31Hz</span>
+              <input type="range" min="-12" max="12" value="0" class="slider-vertical mx-auto" oninput="updateEQBand(0, this.value)">
+              <span id="eq-val-0" class="text-[9px] text-brand-accent font-mono block">0</span>
+            </div>
+            <div class="space-y-2 min-w-[32px]">
+              <span class="text-[9px] font-bold text-slate-400 block">63Hz</span>
+              <input type="range" min="-12" max="12" value="0" class="slider-vertical mx-auto" oninput="updateEQBand(1, this.value)">
+              <span id="eq-val-1" class="text-[9px] text-brand-accent font-mono block">0</span>
+            </div>
+            <div class="space-y-2 min-w-[32px]">
+              <span class="text-[9px] font-bold text-slate-400 block">125Hz</span>
+              <input type="range" min="-12" max="12" value="0" class="slider-vertical mx-auto" oninput="updateEQBand(2, this.value)">
+              <span id="eq-val-2" class="text-[9px] text-brand-accent font-mono block">0</span>
+            </div>
+            <div class="space-y-2 min-w-[32px]">
+              <span class="text-[9px] font-bold text-slate-400 block">250Hz</span>
+              <input type="range" min="-12" max="12" value="0" class="slider-vertical mx-auto" oninput="updateEQBand(3, this.value)">
+              <span id="eq-val-3" class="text-[9px] text-brand-accent font-mono block">0</span>
+            </div>
+            <div class="space-y-2 min-w-[32px]">
+              <span class="text-[9px] font-bold text-slate-400 block">500Hz</span>
+              <input type="range" min="-12" max="12" value="0" class="slider-vertical mx-auto" oninput="updateEQBand(4, this.value)">
+              <span id="eq-val-4" class="text-[9px] text-brand-accent font-mono block">0</span>
+            </div>
+            <div class="space-y-2 min-w-[32px]">
+              <span class="text-[9px] font-bold text-slate-400 block">1kHz</span>
+              <input type="range" min="-12" max="12" value="0" class="slider-vertical mx-auto" oninput="updateEQBand(5, this.value)">
+              <span id="eq-val-5" class="text-[9px] text-brand-accent font-mono block">0</span>
+            </div>
+            <div class="space-y-2 min-w-[32px]">
+              <span class="text-[9px] font-bold text-slate-400 block">2kHz</span>
+              <input type="range" min="-12" max="12" value="0" class="slider-vertical mx-auto" oninput="updateEQBand(6, this.value)">
+              <span id="eq-val-6" class="text-[9px] text-brand-accent font-mono block">0</span>
+            </div>
+            <div class="space-y-2 min-w-[32px]">
+              <span class="text-[9px] font-bold text-slate-400 block">4kHz</span>
+              <input type="range" min="-12" max="12" value="0" class="slider-vertical mx-auto" oninput="updateEQBand(7, this.value)">
+              <span id="eq-val-7" class="text-[9px] text-brand-accent font-mono block">0</span>
+            </div>
+            <div class="space-y-2 min-w-[32px]">
+              <span class="text-[9px] font-bold text-slate-400 block">8kHz</span>
+              <input type="range" min="-12" max="12" value="0" class="slider-vertical mx-auto" oninput="updateEQBand(8, this.value)">
+              <span id="eq-val-8" class="text-[9px] text-brand-accent font-mono block">0</span>
+            </div>
+            <div class="space-y-2 min-w-[32px]">
+              <span class="text-[9px] font-bold text-slate-400 block">16kHz</span>
+              <input type="range" min="-12" max="12" value="0" class="slider-vertical mx-auto" oninput="updateEQBand(9, this.value)">
+              <span id="eq-val-9" class="text-[9px] text-brand-accent font-mono block">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: CONFIGURAÇÕES -->
+    <section id="tab-settings" class="tab-content hidden space-y-6">
+      <div class="glass p-6 rounded-3xl space-y-4 border border-slate-800 shadow-xl">
+        <h2 class="text-lg font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-gear text-brand-500"></i> Configurações do Player
+        </h2>
+        
+        <div class="divide-y divide-slate-800 text-xs">
+          <div class="py-3 flex items-center justify-between">
+            <div>
+              <span class="font-bold text-slate-200 block">Velocidade de Reprodução</span>
+              <span class="text-slate-400 text-[10px]">Alterar Pitch do áudio</span>
+            </div>
+            <select id="speed-select" onchange="changePlaybackSpeed(this.value)" class="bg-slate-800 text-slate-200 border border-slate-700 rounded-xl px-2.5 py-1.5 focus:outline-none font-semibold">
+              <option value="0.75">0.75x (Lento)</option>
+              <option value="1.0" selected>1.0x (Normal)</option>
+              <option value="1.25">1.25x (Rápido)</option>
+              <option value="1.5">1.5x (Acelerado)</option>
+            </select>
+          </div>
+
+          <div class="py-3 flex items-center justify-between">
+            <div>
+              <span class="font-bold text-slate-200 block">Qualidade de Renderização</span>
+              <span class="text-slate-400 text-[10px]">Motor de Áudio WebAudio HD</span>
+            </div>
+            <span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">320kbps Max</span>
+          </div>
+
+          <div class="py-3 flex items-center justify-between">
+            <div>
+              <span class="font-bold text-slate-200 block">Modo Offline PWA / APK</span>
+              <span class="text-slate-400 text-[10px]">Pronto para PWABuilder</span>
+            </div>
+            <span class="text-brand-accent font-bold">Ativo</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: PERFIL (COM AVATARES ESTILO NETFLIX) -->
+    <section id="tab-profile" class="tab-content hidden space-y-6">
+      <div class="glass p-6 rounded-3xl text-center space-y-4 border border-slate-800 shadow-xl">
+        <div class="relative w-28 h-28 mx-auto group cursor-pointer" onclick="toggleAvatarModal()">
+          <img id="profile-avatar" src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=300&q=80" class="w-28 h-28 rounded-full object-cover ring-4 ring-brand-500/40 shadow-2xl group-hover:opacity-80 transition">
+          <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+            <i class="fa-solid fa-camera text-white text-xl"></i>
+          </div>
+        </div>
+
+        <div>
+          <button type="button" onclick="toggleAvatarModal()" class="text-xs bg-brand-500/20 text-brand-accent px-4 py-1.5 rounded-full font-bold hover:bg-brand-500/30 transition border border-brand-500/30">
+            <i class="fa-solid fa-user-astronaut"></i> Trocar Avatar Músico
+          </button>
+        </div>
+
+        <div>
+          <h3 class="text-xl font-black text-white tracking-wide">BELL PLAY MUSIC</h3>
+          <p class="text-xs text-slate-400">bell@bellplaymusic.app</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: SELETOR DE AVATAR ESTILO NETFLIX (4 PERSONAGENS CARTOON) -->
+  <div id="avatar-modal" class="fixed inset-0 z-50 glass-modal hidden flex flex-col justify-center items-center p-6 transition-all duration-300">
+    <div class="glass p-6 rounded-3xl max-w-sm w-full space-y-4 text-center border border-slate-700 shadow-2xl">
+      <h3 class="text-base font-bold text-white flex items-center justify-center gap-2">
+        <i class="fa-solid fa-icons text-brand-accent"></i> Escolha seu Avatar Músico 🎵
+      </h3>
+      <p class="text-xs text-slate-400">Selecione seu personagem estilo desenho animado</p>
+      
+      <div class="grid grid-cols-2 gap-4 py-2">
+        <!-- Cartoon 1: Guitarrista Rock -->
+        <button type="button" onclick="selectAvatar('https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=300&q=80', 'Rockstar')" class="group relative rounded-2xl overflow-hidden border-2 border-transparent hover:border-brand-accent focus:border-brand-accent transition duration-300 focus:outline-none bg-slate-900/80 p-3 text-center">
+          <img src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=300&q=80" class="w-16 h-16 mx-auto rounded-full object-cover group-hover:scale-105 transition duration-300 ring-2 ring-brand-500/50">
+          <span class="block mt-2 text-[11px] font-bold text-slate-200">Rockstar</span>
+        </button>
+        <!-- Cartoon 2: DJ Beats -->
+        <button type="button" onclick="selectAvatar('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80', 'DJ Neon')" class="group relative rounded-2xl overflow-hidden border-2 border-transparent hover:border-brand-accent focus:border-brand-accent transition duration-300 focus:outline-none bg-slate-900/80 p-3 text-center">
+          <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80" class="w-16 h-16 mx-auto rounded-full object-cover group-hover:scale-105 transition duration-300 ring-2 ring-brand-500/50">
+          <span class="block mt-2 text-[11px] font-bold text-slate-200">DJ Beats</span>
+        </button>
+        <!-- Cartoon 3: Pop Star -->
+        <button type="button" onclick="selectAvatar('https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80', 'Pop Star')" class="group relative rounded-2xl overflow-hidden border-2 border-transparent hover:border-brand-accent focus:border-brand-accent transition duration-300 focus:outline-none bg-slate-900/80 p-3 text-center">
+          <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80" class="w-16 h-16 mx-auto rounded-full object-cover group-hover:scale-105 transition duration-300 ring-2 ring-brand-500/50">
+          <span class="block mt-2 text-[11px] font-bold text-slate-200">Pop Star</span>
+        </button>
+        <!-- Cartoon 4: Jazz Beats -->
+        <button type="button" onclick="selectAvatar('https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=300&q=80', 'Jazz Master')" class="group relative rounded-2xl overflow-hidden border-2 border-transparent hover:border-brand-accent focus:border-brand-accent transition duration-300 focus:outline-none bg-slate-900/80 p-3 text-center">
+          <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=300&q=80" class="w-16 h-16 mx-auto rounded-full object-cover group-hover:scale-105 transition duration-300 ring-2 ring-brand-500/50">
+          <span class="block mt-2 text-[11px] font-bold text-slate-200">Jazz Beats</span>
+        </button>
+      </div>
+
+      <button type="button" onclick="toggleAvatarModal()" class="w-full py-2.5 bg-slate-800 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-700 transition">Fechar</button>
+    </div>
+  </div>
+
+  <!-- MINI PLAYER FIXO NA PARTE INFERIOR -->
+  <div id="mini-player" class="fixed bottom-[68px] left-0 right-0 z-30 px-3 max-w-2xl mx-auto">
+    <div class="glass rounded-2xl p-2.5 flex items-center justify-between border border-brand-500/30 shadow-2xl backdrop-blur-xl">
+      <div class="flex items-center gap-3 cursor-pointer overflow-hidden flex-1" onclick="openFullPlayer()">
+        <img id="mini-cover" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=300&q=80" class="w-11 h-11 rounded-xl object-cover shadow-md flex-shrink-0">
+        <div class="overflow-hidden pr-2">
+          <h4 id="mini-title" class="text-xs font-bold text-white truncate">Nenhuma música tocando</h4>
+          <p id="mini-artist" class="text-[10px] text-slate-400 truncate">Selecione ou importe uma faixa</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="prevTrack()" class="p-2 text-slate-400 hover:text-white transition"><i class="fa-solid fa-backward-step text-sm"></i></button>
+        <button id="mini-play-btn" onclick="togglePlay()" class="w-9 h-9 rounded-full bg-brand-accent text-slate-950 flex items-center justify-center font-black shadow-md shadow-brand-accent/20 active:scale-90 transition">
+          <i class="fa-solid fa-play text-xs pl-0.5"></i>
+        </button>
+        <button onclick="nextTrack()" class="p-2 text-slate-400 hover:text-white transition"><i class="fa-solid fa-forward-step text-sm"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-slate-800/80 px-4 py-2 backdrop-blur-md">
+    <div class="max-w-2xl mx-auto flex items-center justify-around text-center">
+      <button onclick="switchTab('home')" id="nav-home" class="nav-btn text-brand-accent flex flex-col items-center gap-1 text-[10px] font-bold py-1">
+        <i class="fa-solid fa-house text-base"></i>
+        <span>Início</span>
+      </button>
+
+      <button onclick="switchTab('download')" id="nav-download" class="nav-btn text-slate-400 flex flex-col items-center gap-1 text-[10px] font-bold py-1">
+        <i class="fa-solid fa-cloud-arrow-down text-base"></i>
+        <span>Baixar MP3</span>
+      </button>
+
+      <button onclick="switchTab('eq')" id="nav-eq" class="nav-btn text-slate-400 flex flex-col items-center gap-1 text-[10px] font-bold py-1">
+        <i class="fa-solid fa-sliders text-base"></i>
+        <span>Equalizador</span>
+      </button>
+
+      <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn text-slate-400 flex flex-col items-center gap-1 text-[10px] font-bold py-1">
+        <i class="fa-solid fa-gear text-base"></i>
+        <span>Config</span>
+      </button>
+
+      <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn text-slate-400 flex flex-col items-center gap-1 text-[10px] font-bold py-1">
+        <i class="fa-solid fa-user text-base"></i>
+        <span>Perfil</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- PLAYER CHEIO (FULL PLAYER SCREEN) -->
+  <div id="full-player" class="fixed inset-0 z-50 bg-slate-950/95 hidden flex-col justify-between p-6 backdrop-blur-3xl transition-all duration-300">
+    <div class="flex items-center justify-between">
+      <button onclick="closeFullPlayer()" class="w-10 h-10 rounded-full bg-slate-800/80 flex items-center justify-center text-slate-300"><i class="fa-solid fa-chevron-down text-sm"></i></button>
+      <span class="text-xs font-extrabold tracking-widest text-brand-accent uppercase">Tocando Agora</span>
+      <button onclick="showToast('Qualidade: Hi-Fi 320kbps')" class="w-10 h-10 rounded-full bg-slate-800/80 flex items-center justify-center text-slate-300"><i class="fa-solid fa-circle-info text-sm"></i></button>
+    </div>
+
+    <div class="my-auto text-center space-y-6">
+      <div class="relative w-64 h-64 mx-auto">
+        <img id="full-cover" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80" class="w-full h-full rounded-3xl object-cover shadow-2xl border border-slate-700/50">
+        <canvas id="visualizer-canvas" class="absolute inset-0 w-full h-full rounded-3xl pointer-events-none"></canvas>
+      </div>
+
+      <div class="space-y-1 max-w-xs mx-auto">
+        <h2 id="full-title" class="text-lg font-black text-white truncate">Título da Música</h2>
+        <p id="full-artist" class="text-xs text-slate-400 font-semibold truncate">Artista / Fonte</p>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <input type="range" id="seek-bar" value="0" min="0" max="100" class="w-full cursor-pointer" oninput="seekAudio(this.value)">
+      <div class="flex justify-between text-[11px] font-mono text-slate-400 font-bold">
+        <span id="current-time">0:00</span>
+        <span id="duration-time">0:00</span>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between px-4 pb-6">
+      <button id="shuffle-btn" onclick="toggleShuffle()" class="text-slate-500 hover:text-slate-200 transition"><i class="fa-solid fa-shuffle text-base"></i></button>
+      <button onclick="prevTrack()" class="text-slate-200 hover:text-white transition"><i class="fa-solid fa-backward-step text-2xl"></i></button>
+      <button id="full-play-btn" onclick="togglePlay()" class="w-16 h-16 rounded-full bg-brand-accent text-slate-950 flex items-center justify-center font-black shadow-xl shadow-brand-accent/30 active:scale-90 transition">
+        <i class="fa-solid fa-play text-xl pl-1"></i>
+      </button>
+      <button onclick="nextTrack()" class="text-slate-200 hover:text-white transition"><i class="fa-solid fa-forward-step text-2xl"></i></button>
+      <button id="repeat-btn" onclick="toggleRepeat()" class="text-slate-500 hover:text-slate-200 transition"><i class="fa-solid fa-repeat text-base"></i></button>
+    </div>
+  </div>
+
+  <audio id="audio-element" class="hidden"></audio>
+
+  <!-- Toast Notification Box -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 glass px-4 py-2.5 rounded-2xl text-xs font-bold text-white hidden border border-brand-accent/40 shadow-xl flex items-center gap-2">
+    <i class="fa-solid fa-circle-check text-brand-accent"></i> <span id="toast-msg">Mensagem</span>
+  </div>
+
+  <!-- SCRIPT LOGIC JAVASCRIPT -->
+  <script src="app.js" defer></script>
+</body>
+</html>

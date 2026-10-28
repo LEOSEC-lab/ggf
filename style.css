@@ -1,0 +1,82 @@
+body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #080a11;
+      color: #f3f4f6;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow-x: hidden;
+      padding-bottom: 90px;
+    }
+
+    .glass {
+      background: rgba(18, 22, 36, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-modal {
+      background: rgba(8, 10, 17, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.15);
+      border-radius: 99px;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      height: 5px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      background: #22d3ee;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+      cursor: pointer;
+    }
+
+    .slider-vertical {
+      writing-mode: bt-lr;
+      -webkit-appearance: slider-vertical;
+      width: 12px;
+      height: 140px;
+    }
+
+    .slider-vertical::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #22d3ee;
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.8);
+      cursor: pointer;
+    }
+
+    @keyframes pulse-subtle {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.03); opacity: 0.9; }
+    }
+    .playing-animation {
+      animation: pulse-subtle 2s infinite ease-in-out;
+    }
+
+/* Ajustes responsivos para telas estreitas e áreas seguras do celular. */
+html { min-height: 100%; }
+body { min-height: 100vh; min-height: 100dvh; padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+header { padding-top: max(0.875rem, env(safe-area-inset-top)); }
+#full-player { padding-top: max(1.5rem, env(safe-area-inset-top)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+@media (max-width: 380px) { #tab-eq .grid-cols-10 { grid-template-columns: repeat(5, minmax(32px, 1fr)); } #full-player .w-64 { width: min(64vw, 16rem); height: min(64vw, 16rem); } }
